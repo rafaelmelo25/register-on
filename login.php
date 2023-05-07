@@ -7,11 +7,13 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/bootstrap/dist/css/bootstrap.min.css">
+    <!-- <link rel="stylesheet" href="assets/bootstrap/dist/css/bootstrap.min.css"> -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <title>Login</title>
 </head>
 <body>
-<script src="assets/bootstrap/boostrstap.bundle.min.js"></script>
+<!-- <script src="assets/bootstrap/boostrstap.bundle.min.js"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 <?php
 session_start();
 require_once('conect-bd.php');
@@ -29,7 +31,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
         die("Não foi possível conectar ao banco de dados. Erro: " . mysqli_connect_error());
     }
 
-    $sql = "SELECT id, senha FROM usuarios WHERE email = ?";
+    $sql = "SELECT id, passwords FROM user WHERE email = ?";
 
     if($stmt = mysqli_prepare($conn, $sql)){
         mysqli_stmt_bind_param($stmt, "s", $email);
@@ -42,8 +44,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION["email"] = $email;
 
                     if($lembrar_acesso){
+                        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
                         setcookie("emailUser", $email, time() + (86400 * 30), "/");
-                        setcookie("passwords", $password, time() + (86400 * 30), "/");
+                        setcookie("passwords", $hashed_password, time() + (86400 * 30), "/");
                     } else {
                         setcookie("emailUser", "", time() - 3600, "/");
                         setcookie("passwords", "", time() - 3600, "/");
@@ -52,7 +55,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
                     mysqli_stmt_close($stmt);
                     mysqli_close($conn);
 
-                    header("Location: perfil.php");
+                    header("Location: /register-on/perfil.php");
                     exit;
                 } else {
                     $senha_err = "Senha incorreta.";
@@ -67,22 +70,14 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
         mysqli_stmt_close($stmt);
     }
 
-    // Verificar se os dados de login são válidos
-    $login_valido = true; // Substitua por sua lógica de verificação de login
-    
-    if ($login_valido) {
-        // Redirecionar para a página perfil.php
-        header("Location: " . dirname($_SERVER['PHP_SELF']) . '/perfil.php');
-        exit();
-    }
-
     mysqli_close($conn);
 }
+
 var_dump($_POST);
 ?>
 <div class="container">
     <div class="row">
-        <form id="form" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+        <form id="form" action="/register-on/perfil.php" method="post">
             <div class="mb-3">
                 <label for="emailUser" class="form-label">Email address</label>
                 <input type="email" class="form-control" id="emailUser" name="emailUser" value="<?php echo $email; ?>">
@@ -96,32 +91,12 @@ var_dump($_POST);
                 <label class="form-check-label" for="lembrar_acesso">Lembrar acesso</label>
             </div>
             
-            <input class="btn btn-primary" name="login" type="submit" value="login" formaction=""/>
+            <input class="btn btn-primary" name="login" type="submit" value="login" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
             
             <a href="new-account.php" target="_blank"><button type="button" class="btn btn-primary">Cadastrar</button></a>
         </form>
     </div>
 </div>
-<script>
-
-var form = document.querySelector('form');
-var inputDiv = document.querySelector('input[type="submit"]');
-var urls = {
-    // cadastrar: 'paginas/cadastro.php',
-    login: '<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>',
-};
-function verificarDestino(e){
-    e.preventDefault();
-    console.log(e.target);
-    var tipo = e.target.value;
-    var url = urls[tipo];
-    form.action = url;
-    alert(url); // só para verificar
-    form.submit();
-}
-inputDiv.addEventListener('click', verificarDestino);
-</script>
-
 
 </body>
 </html>
