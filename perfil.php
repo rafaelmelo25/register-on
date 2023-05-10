@@ -8,14 +8,21 @@
     <link rel="stylesheet" href="assets/bootstrap/dist/css/bootstrap.min.css">
     <title>Perfil</title>
 </head>
-<header>
-<?php
-header("Location: /register-on/perfil.php");
-exit;
-
-?>
-</header>
 <body>
-
+    <div class="container">
+        <div class="row pt-5">
+            <div class="col">
+                <input type="text" class="form-control" placeholder="First name" aria-label="First name">
+            </div>
+            <div class="col">
+                <input type="text" class="form-control" placeholder="Last name" aria-label="Last name">
+            </div>
+        </div>
+    </div>
 </body>
 </html>
+
+<?php
+// header("Location: /register-on/perfil.php");
+// exit;
+?>

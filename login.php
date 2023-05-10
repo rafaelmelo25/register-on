@@ -1,5 +1,3 @@
-<?php //require_once('conect-bd.php');?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,78 +18,91 @@ require_once('conect-bd.php');
 
 $email = "";
 $password = "";
+$email_err = "";
+$senha_err = "";
 
-if($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = $_POST["emailUser"];
-    $password = $_POST["passwords"];
-    $lembrar_acesso = isset($_POST["lembrar_acesso"]);
+// Verifica se o formulário foi submetido
+if($_SERVER["REQUEST_METHOD"] == "POST"){
 
-    // Verificar se a conexão com o banco de dados foi estabelecida com sucesso
-    if ($conn === false) {
-        die("Não foi possível conectar ao banco de dados. Erro: " . mysqli_connect_error());
+    // Valida o email
+    if(empty(trim($_POST["emailUser"]))){
+        $email_err = "Por favor, digite o seu email.";
+    } else{
+        $email = trim($_POST["emailUser"]);
     }
 
-    $sql = "SELECT id, passwords FROM user WHERE email = ?";
+    // Valida a senha
+    if(empty(trim($_POST["passwords"]))){
+        $senha_err = "Por favor, digite a sua senha.";
+    } else{
+        $password = trim($_POST["passwords"]);
+    }
 
-    if($stmt = mysqli_prepare($conn, $sql)){
-        mysqli_stmt_bind_param($stmt, "s", $email);
-        if(mysqli_stmt_execute($stmt)){
-            mysqli_stmt_bind_result($stmt, $id, $hash);
+    // Verifica se não há erros de validação
+    if(empty($email_err) && empty($senha_err)){
 
-            if(mysqli_stmt_fetch($stmt)){
-                if(password_verify($password, $hash)){
-                    $_SESSION["id"] = $id;
-                    $_SESSION["email"] = $email;
+        $sql = "SELECT id, email, passwords FROM user WHERE email = ?";
+        if($stmt = mysqli_prepare($conn, $sql)){
+            mysqli_stmt_bind_param($stmt, "s", $email);
+            if(mysqli_stmt_execute($stmt)){
+                mysqli_stmt_bind_result($stmt, $id, $email, $hash);
+                if(mysqli_stmt_fetch($stmt)){
+                    if(password_verify($password, $hash)){
+                        $_SESSION["id"] = $id;
+                        $_SESSION["email"] = $email;
+                        $_SESSION["password"] = $password;
 
-                    if($lembrar_acesso){
-                        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                        setcookie("emailUser", $email, time() + (86400 * 30), "/");
-                        setcookie("passwords", $hashed_password, time() + (86400 * 30), "/");
+                        if(isset($_POST["lembrar_acesso"]) && $_POST["lembrar_acesso"] == "on"){
+                            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                            setcookie("emailUser", $email, time() + (86400 * 30), "/");
+                            setcookie("passwords", $hashed_password, time() + (86400 * 30), "/");
+                        } else {
+                            setcookie("emailUser", "", time() - 3600, "/");
+                            setcookie("passwords", "", time() - 3600, "/");
+                        }
+
+                        mysqli_stmt_close($stmt);
+                        mysqli_close($conn);
+
+                        header("Location: /register-on/perfil.php");
+                        exit;
                     } else {
-                        setcookie("emailUser", "", time() - 3600, "/");
-                        setcookie("passwords", "", time() - 3600, "/");
+                        $senha_err = "Senha incorreta.";
                     }
-
-                    mysqli_stmt_close($stmt);
-                    mysqli_close($conn);
-
-                    header("Location: /register-on/perfil.php");
-                    exit;
                 } else {
-                    $senha_err = "Senha incorreta.";
+                    $email_err = "Nenhuma conta encontrada com este e-mail.";
                 }
             } else {
-                $email_err = "Nenhuma conta encontrada com este e-mail.";
+                echo "Oops! Algo deu errado. Por favor, tente novamente mais tarde.";
             }
-        } else {
-            echo "Oops! Algo deu errado. Por favor, tente novamente mais tarde.";
+
+            mysqli_stmt_close($stmt);
         }
 
-        mysqli_stmt_close($stmt);
+        mysqli_close($conn);
     }
-
-    mysqli_close($conn);
 }
 
-var_dump($_POST);
 ?>
 <div class="container">
     <div class="row">
-        <form id="form" action="/register-on/perfil.php" method="post">
+        <form id="form" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
             <div class="mb-3">
                 <label for="emailUser" class="form-label">Email address</label>
-                <input type="email" class="form-control" id="emailUser" name="emailUser" value="<?php echo $email; ?>">
+                <input type="email" class="form-control" id="emailUser" name="emailUser">
+                <?php if(!empty($email_err) && isset($_POST['login'])) echo '<div class="alert alert-danger mt-2">' . $email_err . '</div>'; ?>
             </div>
             <div class="mb-3">
                 <label for="passwords" class="form-label">Password</label>
-                <input type="password" class="form-control" id="passwords" name="passwords" value="<?php echo $password; ?>">
+                <input type="password" class="form-control" id="passwords" name="passwords" >
+                <?php if(!empty($senha_err) && isset($_POST['login'])) echo '<div class="alert alert-danger mt-2">' . $senha_err . '</div>'; ?>
             </div>
             <div class="mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="lembrar_acesso" name="lembrar_acesso">
                 <label class="form-check-label" for="lembrar_acesso">Lembrar acesso</label>
             </div>
-            
-            <input class="btn btn-primary" name="login" type="submit" value="login" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
+            <!-- <input class="btn btn-primary" name="login" type="submit" value="login" action="<?php //echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>"> -->
+            <input class="btn btn-primary" name="login" type="submit" value="login">
             
             <a href="new-account.php" target="_blank"><button type="button" class="btn btn-primary">Cadastrar</button></a>
         </form>
@@ -99,4 +110,33 @@ var_dump($_POST);
 </div>
 
 </body>
+
+<script>
+    document.getElementById("form").addEventListener("submit", function(event) {
+        var email = document.getElementById("emailUser").value;
+        var password = document.getElementById("passwords").value;
+
+        var error = false;
+        var errorMsg = "";
+
+        // Validar email
+        if(email == "") {
+            errorMsg += "Por favor, informe seu email.\n";
+            error = true;
+        }
+
+        // Validar senha
+        if(password == "") {
+            errorMsg += "Por favor, informe sua senha.\n";
+            error = true;
+        }
+
+        // Se houver erro, mostrar mensagem e impedir envio do formulário
+        if(error) {
+            alert(errorMsg);
+            event.preventDefault();
+        }
+    });
+</script>
+
 </html>
