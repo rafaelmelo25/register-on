@@ -13,105 +13,176 @@
 <!-- <script src="assets/bootstrap/boostrstap.bundle.min.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 <?php
+// Iniciar a sessão
 session_start();
-require_once('conect-bd.php');
 
-$email = "";
-$password = "";
-$email_err = "";
-$senha_err = "";
+// Incluir o arquivo de conexão com o banco de dados
+require_once "conect-bd.php";
 
-// Verifica se o formulário foi submetido
+// Definir as variáveis e inicializar com valores vazios
+$email = $senha = "";
+$email_err = $senha_err = "";
+
+function verificar_login($conn, $email, $senha){
+    $sql = "SELECT * FROM user WHERE email = ? AND passwords = ?";
+
+    if($stmt = mysqli_prepare($conn, $sql)){
+        mysqli_stmt_bind_param($stmt, "ss", $param_email, $param_senha);
+        $param_email = $email;
+        $param_senha = $senha;
+
+        if(mysqli_stmt_execute($stmt)){
+            $result = mysqli_stmt_get_result($stmt);
+
+            if(mysqli_num_rows($result) == 1){
+                return true;
+            } else{
+                return false;
+            }
+        } else{
+            return false;
+        }
+
+        mysqli_stmt_close($stmt);
+    }
+    return false;
+}
+
+// Processar os dados do formulário quando for enviado
 if($_SERVER["REQUEST_METHOD"] == "POST"){
-
-    // Valida o email
+    // Verificar se o email foi preenchido
     if(empty(trim($_POST["emailUser"]))){
-        $email_err = "Por favor, digite o seu email.";
+        $email_err = "Por favor, insira o email.";
     } else{
         $email = trim($_POST["emailUser"]);
     }
 
-    // Valida a senha
+    // Verificar se a senha foi preenchida
     if(empty(trim($_POST["passwords"]))){
-        $senha_err = "Por favor, digite a sua senha.";
+        $senha_err = "Por favor, insira a senha.";
     } else{
-        $password = trim($_POST["passwords"]);
+        $senha = trim($_POST["passwords"]);
     }
 
-    // Verifica se não há erros de validação
+    // Validar as credenciais
     if(empty($email_err) && empty($senha_err)){
+        if(verificar_login($conn, $email, $senha)){
+            // Armazenar os dados na sessão
+            $_SESSION["loggedin"] = true;
+            $_SESSION["emailUser"] = $email;
 
-        $sql = "SELECT id, email, passwords FROM user WHERE email = ?";
-        if($stmt = mysqli_prepare($conn, $sql)){
-            mysqli_stmt_bind_param($stmt, "s", $email);
-            if(mysqli_stmt_execute($stmt)){
-                mysqli_stmt_bind_result($stmt, $id, $email, $hash);
-                if(mysqli_stmt_fetch($stmt)){
-                    if(password_verify($password, $hash)){
-                        $_SESSION["id"] = $id;
-                        $_SESSION["email"] = $email;
-                        $_SESSION["password"] = $password;
-
-                        if(isset($_POST["lembrar_acesso"]) && $_POST["lembrar_acesso"] == "on"){
-                            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                            setcookie("emailUser", $email, time() + (86400 * 30), "/");
-                            setcookie("passwords", $hashed_password, time() + (86400 * 30), "/");
-                        } else {
-                            setcookie("emailUser", "", time() - 3600, "/");
-                            setcookie("passwords", "", time() - 3600, "/");
-                        }
-
-                        mysqli_stmt_close($stmt);
-                        mysqli_close($conn);
-
-                        header("Location: /register-on/perfil.php");
-                        exit;
-                    } else {
-                        $senha_err = "Senha incorreta.";
-                    }
-                } else {
-                    $email_err = "Nenhuma conta encontrada com este e-mail.";
-                }
-            } else {
-                echo "Oops! Algo deu errado. Por favor, tente novamente mais tarde.";
-            }
-
-            mysqli_stmt_close($stmt);
+            // Redirecionar para a página de perfil
+            header("location: perfil.php");
+            exit();
+        } else{
+            // Exibir uma mensagem de erro genérica
+            $senha_err = "O email ou a senha estão incorretos.";
         }
-
-        mysqli_close($conn);
     }
 }
-
 ?>
-<div class="container">
+
+    <h2>Login</h2>
+    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+
+        <div>
+            <label>Email</label>
+            <input type="email" name="emailUser" value="<?php echo $email; ?>">
+            <span><?php echo $email_err; ?></span>
+        </div>    
+        <div>
+            <label>Senha</label>
+            <input type="password" name="passwords">
+            <span><?php echo $senha_err; ?></span>
+        </div>
+        <div>
+            <input type="submit" value="Entrar">
+        </div>
+    </form>
+    <?php
+    // Exibir mensagem de login feito com sucesso
+    if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
+        echo "<p>Login feito com sucesso!</p>";
+    }
+    ?>
+</body>
+</html>
+
+<!-- <div class="container">
     <div class="row">
-        <form id="form" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+        <form id="form" action="<?php //echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
             <div class="mb-3">
                 <label for="emailUser" class="form-label">Email address</label>
                 <input type="email" class="form-control" id="emailUser" name="emailUser">
-                <?php if(!empty($email_err) && isset($_POST['login'])) echo '<div class="alert alert-danger mt-2">' . $email_err . '</div>'; ?>
+                <?php //if($_SERVER["REQUEST_METHOD"] == "POST" && empty($_POST['emailUser']) && !empty($email_err)) echo '<div class="alert alert-danger mt-2">' . $email_err . '</div>'; ?>
             </div>
             <div class="mb-3">
                 <label for="passwords" class="form-label">Password</label>
                 <input type="password" class="form-control" id="passwords" name="passwords" >
-                <?php if(!empty($senha_err) && isset($_POST['login'])) echo '<div class="alert alert-danger mt-2">' . $senha_err . '</div>'; ?>
+                <?php //if($_SERVER["REQUEST_METHOD"] == "POST" && empty($_POST['passwords']) && !empty($senha_err)) echo '<div class="alert alert-danger mt-2">' . $senha_err . '</div>'; ?>
             </div>
             <div class="mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="lembrar_acesso" name="lembrar_acesso">
                 <label class="form-check-label" for="lembrar_acesso">Lembrar acesso</label>
             </div>
-            <!-- <input class="btn btn-primary" name="login" type="submit" value="login" action="<?php //echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>"> -->
             <input class="btn btn-primary" name="login" type="submit" value="login">
             
             <a href="new-account.php" target="_blank"><button type="button" class="btn btn-primary">Cadastrar</button></a>
         </form>
     </div>
-</div>
+</div> -->
 
-</body>
+<?php
+// if($_SERVER["REQUEST_METHOD"] == "POST") {
+//     // Verifica se o login foi bem-sucedido
+//     if(verificar_login($conn, $_POST["emailUser"], $_POST["passwords"])) {
+//         // Inicia a sessão
+//         session_start();
 
-<script>
+//         // Armazena os dados na sessão
+//         $_SESSION["loggedin"] = true;
+//         $_SESSION["emailUser"] = $_POST["emailUser"];
+
+//         // Redireciona para a página perfil.php
+//         header("Location: perfil.php");
+//         exit();
+//     }
+// }
+
+
+
+?>
+
+
+
+<!-- <div class="container">
+    <div class="row">
+        <form id="form" action="<?php //echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+            <div class="mb-3">
+                <label for="emailUser" class="form-label">Email address</label>
+                <input type="email" class="form-control" id="emailUser" name="emailUser">
+                <?php //if($_SERVER["REQUEST_METHOD"] == "POST" && empty($_POST['emailUser']) && !empty($email_err)) echo '<div class="alert alert-danger mt-2">' . $email_err . '</div>'; ?>
+            </div>
+            <div class="mb-3">
+                <label for="passwords" class="form-label">Password</label>
+                <input type="password" class="form-control" id="passwords" name="passwords" >
+                <?php //if($_SERVER["REQUEST_METHOD"] == "POST" && empty($_POST['passwords']) && !empty($senha_err)) echo '<div class="alert alert-danger mt-2">' . $senha_err . '</div>'; ?>
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="lembrar_acesso" name="lembrar_acesso">
+                <label class="form-check-label" for="lembrar_acesso">Lembrar acesso</label>
+            </div>
+            <input class="btn btn-primary" name="login" type="submit" value="login">
+            
+            <a href="new-account.php" target="_blank"><button type="button" class="btn btn-primary">Cadastrar</button></a>
+        </form>
+    </div>
+</div> -->
+
+
+
+
+<!-- <script>
     document.getElementById("form").addEventListener("submit", function(event) {
         var email = document.getElementById("emailUser").value;
         var password = document.getElementById("passwords").value;
@@ -137,6 +208,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             event.preventDefault();
         }
     });
-</script>
+</script> -->
 
 </html>
