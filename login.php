@@ -8,7 +8,14 @@
     <!-- <link rel="stylesheet" href="assets/bootstrap/dist/css/bootstrap.min.css"> -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <title>Login</title>
+    <script>
+        window.onload = function() {
+            document.getElementById("emailUser").value = "";
+            document.getElementById("passwords").value = "";
+        }
+    </script>
 </head>
+
 <body>
 <!-- <script src="assets/bootstrap/boostrstap.bundle.min.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
@@ -52,17 +59,24 @@ function verificar_login($conn, $email, $senha){
 if($_SERVER["REQUEST_METHOD"] == "POST"){
     // Verificar se o email foi preenchido
     if(empty(trim($_POST["emailUser"]))){
-        $email_err = "Por favor, insira o email.";
+        $email_err = "Por favor, insira um endereço de e-mail válido.";
     } else{
+        // Verifica se o email é válido
         $email = trim($_POST["emailUser"]);
+        if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
+            $email_err = "Por favor, insira um endereço de e-mail válido.";
+        }
     }
-
-    // Verificar se a senha foi preenchida
+    
     if(empty(trim($_POST["passwords"]))){
-        $senha_err = "Por favor, insira a senha.";
+        $senha_err = "Por favor, insira uma senha.";
     } else{
         $senha = trim($_POST["passwords"]);
+        if(strlen($senha) < 6){
+            $senha_err = "A senha deve ter pelo menos 6 caracteres.";
+        }
     }
+    
 
     // Validar as credenciais
     if(empty($email_err) && empty($senha_err)){
@@ -70,7 +84,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             // Armazenar os dados na sessão
             $_SESSION["loggedin"] = true;
             $_SESSION["emailUser"] = $email;
-
+    
             // Redirecionar para a página de perfil
             header("location: perfil.php");
             exit();
@@ -78,32 +92,43 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             // Exibir uma mensagem de erro genérica
             $senha_err = "O email ou a senha estão incorretos.";
         }
+    } else {
+        // Exibir a mensagem de erro apenas se o email ou senha estiverem incorretos
+        $senha_err = empty($senha_err) ? "" : $senha_err;
     }
+    
 }
 ?>
-
+    
     <h2>Login</h2>
     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
-
         <div>
             <label>Email</label>
             <input type="email" name="emailUser" value="<?php echo $email; ?>">
-            <span><?php echo $email_err; ?></span>
+            <span><?php echo !empty($email_err) ? $email_err : ''; ?></span>
         </div>    
         <div>
             <label>Senha</label>
-            <input type="password" name="passwords">
-            <span><?php echo $senha_err; ?></span>
+            <input type="password" name="passwords">            
+            <span><?php echo !empty($senha_err) ? $senha_err : ''; ?></span>
         </div>
         <div>
             <input type="submit" value="Entrar">
+            <a href="new-account.php" target="_blank"><input type="button" value="Cadastrar"></a>
         </div>
     </form>
     <?php
     // Exibir mensagem de login feito com sucesso
-    if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
-        echo "<p>Login feito com sucesso!</p>";
+    // if(empty($email_err) && empty($senha_err)){
+    if(empty($_SESSION) && ($_SESSION)){
+        if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
+            echo " <script> alert('Login feito com sucesso!'); </script>";
+            
+        }
     }
+    ?>
+    <?php
+    //echo(" <script> alert('teste'); </script>");
     ?>
 </body>
 </html>

@@ -3,6 +3,8 @@ session_start();
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     header("location: login.php");
     exit;
+
+
 }
 ?>
 <!DOCTYPE html>
@@ -15,6 +17,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     <link rel="stylesheet" href="assets/bootstrap/dist/css/bootstrap.min.css">
     <title>Perfil</title>
 </head>
+<script> alert('Login feito com sucesso!'); </script>
 <body>
     <div class="container">
         <div class="row pt-5">
