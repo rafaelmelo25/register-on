@@ -1,7 +1,7 @@
 <?php require_once('conect-bd.php');?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -43,7 +43,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Executa a consulta SQL de inserção
         $sql = "INSERT INTO user (nome, email, passwords) VALUES ('$name', '$email_user', '$passwords')";
+
         $resultado = mysqli_query($conn, $sql);
+
+        // Verifica se as senhas são iguais
+        if ($passwords !== $confirm_password) {
+            die("Erro: as senhas não coincidem.");
+        }
+
+        // Preparação da consulta SQL
+        $sql = "INSERT INTO user (nome, email, passwords) VALUES (?, ?, ?)";
+        $stmt = mysqli_prepare($conn, $sql);
+
+        // Vincula parâmetros
+        // mysqli_stmt_bind_param($stmt, "sss", $name, $email_user, $passwords);
+
+        // Executa a consulta SQL
+        // $resultado = mysqli_stmt_    execute($stmt);
 
         // Verifica se houve erro na execução da consulta
         if (!$resultado) {
@@ -52,6 +68,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Fecha a conexão com o banco de dados
         mysqli_close($conn);
+
 
         // echo "Usuário cadastrado com sucesso!";
     } else {

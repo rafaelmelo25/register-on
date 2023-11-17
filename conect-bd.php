@@ -36,4 +36,21 @@ if (!$conn) {
 //     // Fecha a conexão com o banco de dados
 //     mysqli_close($conn);
 
+$sql = "ALTER TABLE user
+    ADD COLUMN cep VARCHAR(50) NOT NULL,
+    ADD COLUMN numero_residencia VARCHAR(50) NOT NULL,
+    ADD COLUMN bairro VARCHAR(50) NOT NULL,
+    ADD COLUMN cidade VARCHAR(50) NOT NULL,
+    ADD COLUMN estado VARCHAR(50) NOT NULL";
+
+// Executa a instrução SQL
+if (mysqli_query($conn, $sql)) {
+    echo "Tabela alterada com sucesso!";
+} else {
+    echo "Erro ao alterar tabela: " . mysqli_error($conn);
+}
+
+    // Fecha a conexão com o banco de dados
+    mysqli_close($conn);
+
 ?>
